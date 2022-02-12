@@ -1,0 +1,8 @@
+{
+    "name": "goe-charger-interface",
+    "version": "0.0.1",
+    "dependencies": [
+      "curl",
+      "jsoncpp"
+    ]
+  }
