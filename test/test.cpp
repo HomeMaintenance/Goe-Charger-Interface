@@ -1,8 +1,8 @@
 #include <iostream>
-#include "GoeCharger.h"
-
 #include <curl/curl.h>
 #include <json/json.h>
+#include <GoeCharger.h>
+
 
 std::size_t callback(
         const char* in,
@@ -91,11 +91,14 @@ int test_curl(){
 }
 
 
-int main(int argc, char * argv[]){
+void test_goe(){
+    goe::Charger charger("charger","192.168.178.106");
+    auto alw1 = charger.get_alw();
+    charger.set_alw(!alw1);
+    auto alw2 = charger.get_alw();
+}
 
-    test_curl();
-    goe::Charger charger("test", "192.168.178.106");
-    std::cout << "min amp: " << charger.get_min_amp() << std::endl;
-    std::cout << "allowed_power: " << charger.get_allowed_power() << std::endl;
+int main(int argc, char * argv[]){
+    test_goe();
     return 0;
 }

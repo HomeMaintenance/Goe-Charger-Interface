@@ -1,19 +1,44 @@
 #include "GoeCharger.h"
 #include <curl/curl.h>
-#include <json/json.h>
 #include <math.h>
 #ifdef GOE_DEBUG
 #include <iostream>
 #endif
 
+std::string prettify(const Json::Value& json){
+    return json.toStyledString();
+}
+
+std::unordered_map<std::string,std::string> json_2_map(const Json::Value& json){
+    std::unordered_map<std::string,std::string> result;
+    for(const auto& key : json.getMemberNames()){
+        if(json[key].isArray()){
+
+        }
+        else if(json[key].isObject()){
+
+        }
+        else{
+            result[key] = json[key].asString();
+        }
+    }
+    return result;
+}
+
 namespace goe{
-Charger::Charger(std::string _name, std::string _address): name(_name) {
+Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
     address =  "http://" + _address;
-    get_data_from_device();
+    cache = new Cache<Json::Value>();
+    *cache = get_data_from_device();
 }
 
 Charger::~Charger(){
+    delete cache;
+    cache = nullptr;
+}
 
+float Charger::using_power() {
+    return amp_to_power(amp);
 }
 
 int Charger::get_error_counter() const {
@@ -25,19 +50,21 @@ int Charger::get_min_amp() const{
 }
 
 void Charger::set_amp(int value){
-    if(value == amp)
-        return;
-    amp = value;
+    // if(value == amp)
+    //     return;
+    // amp.update(value);
 }
 
-void Charger::set_alw(bool value)
-{
-    if(value == alw)
+void Charger::set_alw(bool value){
+    if(value == get_alw())
         return;
-    alw = value;
+    set_data("alw",static_cast<int>(value));
 }
 
-bool Charger::get_alw() const{ return alw; }
+bool Charger::get_alw() const{
+    auto raw_data = get_from_cache("alw", "0").asString();
+    return raw_data == "1" ? true : false;
+}
 
 int Charger::get_allowed_power() const{
     return allowed_power;
@@ -80,8 +107,24 @@ bool Charger::allow_power(int power){
     return true;
 }
 
+bool Charger::update_cache() const {
+    Json::Value device_data = get_data_from_device();
+    if(device_data.empty())
+        return false;
+    cache->update(device_data);
+    return true;
+}
+
+Json::Value Charger::get_from_cache(const std::string& key, const Json::Value& defaultValue) const{
+    if(cache->dirty()){
+        update_cache();
+    }
+    auto result = (*cache->get_data()).get(key, defaultValue);
+    return result;
+}
+
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out);
-std::unordered_map<std::string, dataType> Charger::get_data_from_device() const {
+Json::Value Charger::get_data_from_device() const {
     CURL* curl = curl_easy_init();
     // Set remote URL.
     curl_easy_setopt(curl, CURLOPT_URL, (address+"/status").c_str());
@@ -107,30 +150,64 @@ std::unordered_map<std::string, dataType> Charger::get_data_from_device() const 
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
     curl_easy_cleanup(curl);
-    bool success = false;
     if (httpCode == 200)
     {
-        success = true;
-        #ifdef GOE_DEBUG
         Json::Value jsonData;
         Json::Reader jsonReader;
         if (jsonReader.parse(*httpData.get(), jsonData))
         {
+            #if GOE_DEBUG
             std::cout << "Successfully parsed JSON data" << std::endl;
             std::cout << "\nJSON data received:" << std::endl;
             std::cout << jsonData.toStyledString() << std::endl;
+            #endif
+            return jsonData;
         }
         else
         {
+            #if GOE_DEBUG
             std::cout << "Could not parse HTTP data as JSON" << std::endl;
             std::cout << "HTTP data was:\n" << *httpData.get() << std::endl;
+            #endif
         }
-        #endif
     }
+    return{};
+}
 
-    std::unordered_map<std::string, dataType> result;
-    result["success"] = success;
-    return result;
+bool Charger::set_data(std::string key, Json::Value value) const{
+
+    if(key == "")
+        return false;
+    if(value.isObject())
+        return false;
+    if(value.isArray())
+        return false;
+    std::string request_address = address+"/mqtt?payload="+key+"="+value.asString();
+    CURL* curl = curl_easy_init();
+    // Set remote URL.
+    curl_easy_setopt(curl, CURLOPT_URL, (request_address).c_str());
+    // Don't bother trying IPv6, which would increase DNS resolution time.
+    curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    // Don't wait forever, time out after 10 seconds.
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+    // Follow HTTP redirects if necessary.
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    // Hook up data handling function.
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
+
+    // Response information.
+    long httpCode(0);
+
+    // Run our HTTP GET command, capture the HTTP response code, and clean up.
+    curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    curl_easy_cleanup(curl);
+    if (httpCode == 200)
+    {
+        cache->mark_dirty();
+        return true;
+    }
+    return false;
 }
 
 float Charger::amp_to_power(float ampere){

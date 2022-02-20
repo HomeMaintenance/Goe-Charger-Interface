@@ -2,18 +2,20 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
-#include "PowerRange.h"
+#include <json/json.h>
+#include <PowerSink.h>
+#include <MqttClient.h>
+#include "Utils/Cache.h"
 
 
 
 namespace goe{
     using dataType = std::variant<std::string, int, float, bool>;
 
-    class Charger{
+    class Charger: public PowerSink{
     public:
         Charger(std::string name, std::string address);
         ~Charger();
-        std::string name;
         std::string address;
         std::unordered_map<std::string, dataType> data;
 
@@ -24,12 +26,15 @@ namespace goe{
         };
 
     public:
+
+        virtual float using_power() override;
+
         int get_error_counter() const;
 
         int get_min_amp() const;
         void set_amp(int value);
-        void set_alw(bool value);
         bool get_alw() const;
+        void set_alw(bool value);
 
         int get_allowed_power() const;
         bool connected() const;
@@ -45,6 +50,10 @@ namespace goe{
 
     protected:
     private:
+        Cache<Json::Value>* cache;
+        bool update_cache() const;
+        Json::Value get_from_cache(const std::string& key, const Json::Value& defaultValue) const;
+
         bool alw{false};
         int amp{0};
         const int min_amp{6};
@@ -54,6 +63,7 @@ namespace goe{
         ControlMode control_mode{ControlMode::Off};
 
     private:
-        std::unordered_map<std::string, dataType> get_data_from_device() const;
+        Json::Value get_data_from_device() const;
+        bool set_data(std::string key, Json::Value value) const;
     };
 }
