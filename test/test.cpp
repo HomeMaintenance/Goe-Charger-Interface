@@ -91,14 +91,38 @@ int test_curl(){
 }
 
 
-void test_goe(){
-    goe::Charger charger("charger","192.168.178.106");
+void set_alw(goe::Charger& charger){
     auto alw1 = charger.get_alw();
     charger.set_alw(!alw1);
     auto alw2 = charger.get_alw();
+    charger.set_alw(!alw2);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+    charger.set_alw(false);
+}
+
+void set_amp(goe::Charger& charger){
+    auto start = charger.get_amp();
+    for(int i = 6; i <= 20; ++i){
+        charger.set_amp(i);
+        std::cout << charger.get_amp() << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+    }
+    charger.set_amp(6);
+    std::cout << charger.get_amp() << std::endl;
+}
+
+void test_goe(){
+    goe::Charger charger("charger","192.168.178.106");
+    set_amp(charger);
+    set_alw(charger);
+
+    // auto amp = charger.get_amp();
 }
 
 int main(int argc, char * argv[]){
+    #ifdef GOE_DEBUG
+    assert(false);
+    #endif
     test_goe();
     return 0;
 }

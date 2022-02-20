@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <mutex>
 #include <json/json.h>
 #include <PowerSink.h>
 #include <MqttClient.h>
@@ -32,6 +33,7 @@ namespace goe{
         int get_error_counter() const;
 
         int get_min_amp() const;
+        int get_amp();
         void set_amp(int value);
         bool get_alw() const;
         void set_alw(bool value);
@@ -62,6 +64,7 @@ namespace goe{
         int allowed_power{0};
         ControlMode control_mode{ControlMode::Off};
 
+        std::unique_ptr<std::mutex> curl_mtx;
     private:
         Json::Value get_data_from_device() const;
         bool set_data(std::string key, Json::Value value) const;

@@ -43,7 +43,7 @@ target_link_libraries(Goe PUBLIC
     JsonCpp::JsonCpp
     PowerManagement
     mqtt)
-target_compile_definitions(Goe PRIVATE GOE_DEBUG=0)
+# target_compile_definitions(Goe PRIVATE GOE_DEBUG=1)
 
 if(PROJECT_IS_TOP_LEVEL)
     find_package(Doxygen

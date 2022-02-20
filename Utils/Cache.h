@@ -24,11 +24,13 @@ public:
     void update(const T* _data){
         time = std::clock();
         *data = *_data;
+        dirty_flag = false;
     }
 
     void update(T _data){
         time = std::clock();
         *data = _data;
+        dirty_flag = false;
     }
 
     void update(std::shared_ptr<T> _data){
