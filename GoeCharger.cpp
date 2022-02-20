@@ -31,6 +31,7 @@ Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
     curl_mtx = std::make_unique<std::mutex>();
     cache = new Cache<Json::Value>();
     *cache = get_data_from_device();
+    set_requesting_power(power_range_default);
 }
 
 Charger::~Charger(){
@@ -40,10 +41,6 @@ Charger::~Charger(){
 
 float Charger::using_power() {
     return get_alw() ? amp_to_power(amp) : 0.f;
-}
-
-int Charger::get_error_counter() const {
-    return error_counter;
 }
 
 int Charger::get_min_amp() const{
@@ -74,14 +71,6 @@ bool Charger::get_alw() const{
     return result;
 }
 
-int Charger::get_allowed_power() const{
-    return allowed_power;
-}
-
-bool Charger::connected() const{
-    return false;
-}
-
 void Charger::set_control_mode(Charger::ControlMode mode){
     control_mode = mode;
 }
@@ -90,25 +79,21 @@ Charger::ControlMode Charger::get_control_mode() const{
     return control_mode;
 }
 
-int Charger::power_usage() const{
-    return 0;
-}
-
-bool Charger::allow_power(int power){
+bool Charger::allow_power(float power){
     if(control_mode == ControlMode::Solar){
         if(power > 0){
             if(power >= requesting_power_range.get_min()){
                 int _amp = floor(power_to_amp(power));
                 set_amp(_amp);
                 set_alw(true);
-                allowed_power = amp_to_power(_amp);
+                set_allowed_power(amp_to_power(_amp));
             }
         }
         else{
-            if(allowed_power != 0){
+            if(get_alw() || get_allowed_power() != 0){
                 set_amp(min_amp);
                 set_alw(false);
-                allowed_power = 0;
+                set_allowed_power(0);;
             }
         }
     }
