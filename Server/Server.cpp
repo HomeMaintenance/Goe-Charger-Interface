@@ -7,21 +7,31 @@ Json::Value convert_to_json(const std::string str){
     return jsonData;
 }
 
+std::string convert_to_string(const Json::Value& json){
+    return Json::FastWriter().write(json);
+}
+
 Server::Server(int _port){
     // HTTP
     svr.Get("/hi", [this](const httplib::Request &req, httplib::Response &res) {
-        std::string content = "{\"test\":"+std::to_string(test)+"}";
+        Json::Value jsonData;
+        jsonData["test"] = test;
         test *= 2;
+        std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
 
     svr.Get("/charger/alw", [this](const httplib::Request &req, httplib::Response &res) {
-        std::string content = "{\"value\":"+std::to_string(goeCharger.lock()->get_alw())+"}";
+        Json::Value jsonData;
+        jsonData["value"] = goeCharger.lock()->get_alw();
+        std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
 
     svr.Get("/charger/amp", [this](const httplib::Request &req, httplib::Response &res) {
-        std::string content = "{\"value\":"+std::to_string(goeCharger.lock()->get_amp())+"}";
+        Json::Value jsonData;
+        jsonData["value"] = goeCharger.lock()->get_amp();
+        std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
 
