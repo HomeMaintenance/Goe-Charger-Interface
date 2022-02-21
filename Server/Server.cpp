@@ -23,14 +23,16 @@ Server::Server(int _port){
 
     svr.Get("/charger/alw", [this](const httplib::Request &req, httplib::Response &res) {
         Json::Value jsonData;
-        jsonData["value"] = goeCharger.lock()->get_alw();
+        if(auto c = goeCharger.lock())
+            jsonData["value"] = c->get_alw();
         std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
 
     svr.Get("/charger/amp", [this](const httplib::Request &req, httplib::Response &res) {
         Json::Value jsonData;
-        jsonData["value"] = goeCharger.lock()->get_amp();
+        if(auto c = goeCharger.lock())
+            jsonData["value"] = c->get_amp();
         std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
@@ -40,8 +42,12 @@ Server::Server(int _port){
         if(jsonData.isMember("value")){
             int value = jsonData["value"].asInt();
             std::cout << "value: "+ value << std::endl;
-            goeCharger.lock()->set_amp(value);
-            res.status = 200;
+            if(auto c = goeCharger.lock()){
+                c->set_amp(value);
+                res.status = 200;
+            }
+            else
+                res.status = 500;
         }
         else{
             res.status = 400;
@@ -60,5 +66,8 @@ Server::Server(int _port){
 
 void Server::run(){
     svr.listen("0.0.0.0", port);
-    std::cout << "listening on port " << port << std::endl;
+}
+
+void Server::stop(){
+    svr.stop();
 }

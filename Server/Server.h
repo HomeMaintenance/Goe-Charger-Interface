@@ -8,6 +8,8 @@ public:
 
     void run();
 
+    void stop();
+
     std::weak_ptr<goe::Charger> goeCharger;
 
 private:
