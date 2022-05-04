@@ -82,7 +82,7 @@ Charger::ControlMode Charger::get_control_mode() const{
 bool Charger::allow_power(float power){
     if(control_mode == ControlMode::Solar){
         if(power > 0){
-            if(power >= requesting_power_range.get_min()){
+            if(power >= get_requesting_power().get_min()){
                 int _amp = floor(power_to_amp(power));
                 set_amp(_amp);
                 set_alw(true);

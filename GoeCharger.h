@@ -54,14 +54,13 @@ namespace goe{
         int amp{0};
         const int min_amp{6};
         const int max_amp{20};
-        PowerRange requesting_power_range{PowerRange(6,20)};
         ControlMode control_mode{ControlMode::Off};
 
         std::unique_ptr<std::mutex> curl_mtx;
     private:
         Json::Value get_data_from_device() const;
         bool set_data(std::string key, Json::Value value) const;
-        const PowerRange power_range_default = PowerRange(min_amp, max_amp);
+        const PowerRange power_range_default = PowerRange(min_amp * 690.f, max_amp * 690.f);
         const PowerRange power_range_off = PowerRange(0,0);
     };
 }
