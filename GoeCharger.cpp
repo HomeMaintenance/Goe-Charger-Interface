@@ -5,6 +5,8 @@
 #include <iostream>
 #endif
 
+
+
 std::string prettify(const Json::Value& json){
     return json.toStyledString();
 }
@@ -26,6 +28,7 @@ std::unordered_map<std::string,std::string> json_2_map(const Json::Value& json){
 }
 
 namespace goe{
+const std::string Charger::type = "goeCharger";
 Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
     address =  "http://" + _address;
     curl_mtx = std::make_unique<std::mutex>();
@@ -226,6 +229,19 @@ float Charger::power_to_amp(float power){
     const float u_eff = 3*230; // Drehstrom
     const float i = power/u_eff;
     return i;
+}
+
+Json::Value Charger::serialize(){
+    Json::Value result = PowerSink::serialize();
+    result["type"] = type;
+
+    Json::Value controlModeJson;
+    controlModeJson["int"] = static_cast<int>(control_mode);
+    controlModeJson["str"] = controlModeLUT[static_cast<int>(control_mode)];
+    result["controlMode"] = controlModeJson;
+    result["amp"] = amp;
+    result["alw"] = alw;
+    return result;
 }
 
 std::size_t write_callback(const char* in, std::size_t size, std::size_t num, std::string* out){

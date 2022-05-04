@@ -17,6 +17,8 @@ namespace goe{
     public:
         Charger(std::string name, std::string address);
         ~Charger();
+        static const std::string type;
+
         std::string address;
         std::unordered_map<std::string, dataType> data;
 
@@ -44,6 +46,8 @@ namespace goe{
         static float amp_to_power(float ampere);
         static float power_to_amp(float power);
 
+        virtual Json::Value serialize() override;
+
     protected:
     private:
         Cache<Json::Value>* cache;
@@ -55,6 +59,7 @@ namespace goe{
         const int min_amp{6};
         const int max_amp{20};
         ControlMode control_mode{ControlMode::Off};
+        std::vector<std::string> controlModeLUT{"Off","On","Solar"};
 
         std::unique_ptr<std::mutex> curl_mtx;
     private:
