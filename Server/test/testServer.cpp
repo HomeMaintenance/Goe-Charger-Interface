@@ -19,13 +19,14 @@ int main(int argc, char* argv[]){
     std::signal(SIGINT, signal_handler);
 
     std::shared_ptr<Server> server = std::make_shared<Server>(8800);
-    std::shared_ptr<goe::Charger> goeCharger = std::make_shared<goe::Charger>("goeCharger", "192.168.178.106");
+    std::shared_ptr<goe::Charger> goeCharger = std::make_shared<goe::Charger>("goeCharger", "192.168.178.106"); // 154 geht grade nicht
     server->goeCharger = goeCharger;
 
     std::thread server_thread(server_thread_func, server);
 
+    std::cout << "Running server" << std::endl;
     while(run_servers){
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(60*60*1000));
     }
 
     std::cout << "closing server..." << std::endl;

@@ -37,11 +37,28 @@ Server::Server(int _port){
         res.set_content(content, "application/json");
     });
 
+    svr.Post("/charger/alw", [this](const httplib::Request &req, httplib::Response &res) {
+        Json::Value jsonData = convert_to_json(req.body);
+        if(jsonData.isMember("value")){
+            bool value = jsonData["value"].asBool();
+            std::cout << "value: " << value << std::endl;
+            if(auto c = goeCharger.lock()){
+                c->set_alw(value);
+                res.status = 200;
+            }
+            else
+                res.status = 500;
+        }
+        else{
+            res.status = 400;
+        }
+    });
+
     svr.Post("/charger/amp", [this](const httplib::Request &req, httplib::Response &res) {
         Json::Value jsonData = convert_to_json(req.body);
         if(jsonData.isMember("value")){
             int value = jsonData["value"].asInt();
-            std::cout << "value: "+ value << std::endl;
+            std::cout << "value: "<< value << std::endl;
             if(auto c = goeCharger.lock()){
                 c->set_amp(value);
                 res.status = 200;
