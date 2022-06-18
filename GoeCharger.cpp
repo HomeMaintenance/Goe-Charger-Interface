@@ -248,7 +248,10 @@ Json::Value Charger::serialize(){
     result["controlMode"] = controlModeJson;
     result["amp"] = get_amp();
     result["alw"] = get_alw();
-    result["ast"] = accessStateLUT[static_cast<int>(get_access_state())];
+    Json::Value accessStateJson;
+    accessStateJson["int"] = get_access_state();
+    accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state())];
+    result["accessState"] = accessStateJson;
     return result;
 }
 
