@@ -33,6 +33,7 @@ Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
     address =  "http://" + _address;
     curl_mtx = std::make_unique<std::mutex>();
     cache = new Cache<Json::Value>();
+    _online = new bool();
     *cache = get_data_from_device();
     set_requesting_power(power_range_default);
 }
@@ -40,6 +41,8 @@ Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
 Charger::~Charger(){
     delete cache;
     cache = nullptr;
+    delete _online;
+    _online = nullptr;
 }
 
 float Charger::using_power() {
@@ -149,6 +152,7 @@ Json::Value Charger::get_data_from_device() const {
     curl_easy_cleanup(curl);
     if (httpCode == 200)
     {
+        *_online = true;
         Json::Value jsonData;
         Json::Reader jsonReader;
         if (jsonReader.parse(*httpData.get(), jsonData))
@@ -167,6 +171,9 @@ Json::Value Charger::get_data_from_device() const {
             std::cout << "HTTP data was:\n" << *httpData.get() << std::endl;
             #endif
         }
+    }
+    else{
+        *_online = false;
     }
     return{};
 }
@@ -235,7 +242,10 @@ Charger::AccessState Charger::get_access_state() const{
     auto raw_data = get_from_cache("ast", "1").asString();
     AccessState state = static_cast<AccessState>(std::stoi(raw_data));
     return state;
-    return state;
+}
+
+bool Charger::online() const{
+    return *_online;
 }
 
 Json::Value Charger::serialize(){
@@ -252,6 +262,7 @@ Json::Value Charger::serialize(){
     accessStateJson["int"] = get_access_state();
     accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state())];
     result["access_state"] = accessStateJson;
+    result["online"] = online();
     return result;
 }
 

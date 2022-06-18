@@ -54,6 +54,8 @@ namespace goe{
 
         AccessState get_access_state() const;
 
+        bool online() const;
+
         virtual Json::Value serialize() override;
 
     protected:
@@ -71,6 +73,8 @@ namespace goe{
         AccessState accessState{AccessState::RFID_APP_REQ};
 
         std::vector<std::string> accessStateLUT{"Open", "RFID_APP_REQ", "PRICE_AUTO"};
+
+        bool* _online;
 
         std::unique_ptr<std::mutex> curl_mtx;
     private:
