@@ -28,6 +28,12 @@ namespace goe{
             Solar
         };
 
+        enum AccessState{
+            OPEN,
+            RFID_APP_REQ,
+            PRICE_AUTO
+        };
+
     public:
 
         virtual float using_power() override;
@@ -46,6 +52,8 @@ namespace goe{
         static float amp_to_power(float ampere);
         static float power_to_amp(float power);
 
+        AccessState get_access_state() const;
+
         virtual Json::Value serialize() override;
 
     protected:
@@ -60,6 +68,9 @@ namespace goe{
         const int max_amp{20};
         ControlMode control_mode{ControlMode::Off};
         std::vector<std::string> controlModeLUT{"Off","On","Solar"};
+        AccessState accessState{AccessState::RFID_APP_REQ};
+
+        std::vector<std::string> accessStateLUT{"Open", "RFID_APP_REQ", "PRICE_AUTO"};
 
         std::unique_ptr<std::mutex> curl_mtx;
     private:

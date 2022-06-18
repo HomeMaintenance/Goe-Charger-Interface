@@ -231,6 +231,12 @@ float Charger::power_to_amp(float power){
     return i;
 }
 
+Charger::AccessState Charger::get_access_state() const{
+    auto raw_data = get_from_cache("ast", 1).asInt();
+    AccessState state = static_cast<AccessState>(raw_data);
+    return state;
+}
+
 Json::Value Charger::serialize(){
     Json::Value result = PowerSink::serialize();
     result["type"] = type;
@@ -239,8 +245,9 @@ Json::Value Charger::serialize(){
     controlModeJson["int"] = static_cast<int>(control_mode);
     controlModeJson["str"] = controlModeLUT[static_cast<int>(control_mode)];
     result["controlMode"] = controlModeJson;
-    result["amp"] = amp;
-    result["alw"] = alw;
+    result["amp"] = get_amp();
+    result["alw"] = get_alw();
+    result["ast"] = accessStateLUT[static_cast<int>(get_access_state())];
     return result;
 }
 
