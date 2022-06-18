@@ -232,8 +232,9 @@ float Charger::power_to_amp(float power){
 }
 
 Charger::AccessState Charger::get_access_state() const{
-    auto raw_data = get_from_cache("ast", 1).asInt();
-    AccessState state = static_cast<AccessState>(raw_data);
+    auto raw_data = get_from_cache("ast", "1").asString();
+    AccessState state = static_cast<AccessState>(std::stoi(raw_data));
+    return state;
     return state;
 }
 
