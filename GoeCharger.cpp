@@ -245,13 +245,13 @@ Json::Value Charger::serialize(){
     Json::Value controlModeJson;
     controlModeJson["int"] = static_cast<int>(control_mode);
     controlModeJson["str"] = controlModeLUT[static_cast<int>(control_mode)];
-    result["controlMode"] = controlModeJson;
+    result["control_mode"] = controlModeJson;
     result["amp"] = get_amp();
     result["alw"] = get_alw();
     Json::Value accessStateJson;
     accessStateJson["int"] = get_access_state();
     accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state())];
-    result["accessState"] = accessStateJson;
+    result["access_state"] = accessStateJson;
     return result;
 }
 
