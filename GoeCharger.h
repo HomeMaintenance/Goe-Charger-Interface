@@ -58,6 +58,8 @@ namespace goe{
 
         virtual Json::Value serialize() override;
 
+        virtual void register_http_server_functions(httplib::Server* svr) override;
+
     protected:
     private:
         Cache<Json::Value>* cache;
@@ -72,7 +74,7 @@ namespace goe{
         std::vector<std::string> controlModeLUT{"Off","On","Solar"};
         AccessState accessState{AccessState::RFID_APP_REQ};
 
-        std::vector<std::string> accessStateLUT{"Open", "RFID_APP_REQ", "PRICE_AUTO"};
+        const std::vector<std::string> accessStateLUT{"Open", "RFID_APP_REQ", "PRICE_AUTO", "RFID_APP_REQ & PRICE_AUTO"};
 
         bool* _online;
 
@@ -82,5 +84,14 @@ namespace goe{
         bool set_data(std::string key, Json::Value value) const;
         const PowerRange power_range_default = PowerRange(min_amp * 690.f, max_amp * 690.f);
         const PowerRange power_range_off = PowerRange(0,0);
+
+
+        struct UpdateParamData{
+            std::string name;
+            std::string str_value;
+            int int_value;
+        };
+
+        void update_device(UpdateParamData data);
     };
 }

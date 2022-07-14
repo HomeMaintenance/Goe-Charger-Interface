@@ -78,7 +78,10 @@ bool Charger::get_alw() const{
 }
 
 void Charger::set_control_mode(Charger::ControlMode mode){
-    control_mode = mode;
+    if(control_mode != mode){
+        control_mode = mode;
+        set_alw(control_mode == ControlMode::On);
+    }
 }
 
 Charger::ControlMode Charger::get_control_mode() const{
@@ -226,6 +229,15 @@ bool Charger::set_data(std::string key, Json::Value value) const{
     return false;
 }
 
+void Charger::update_device(UpdateParamData data){
+    if(data.name == "ctrl"){
+        set_control_mode(static_cast<Charger::ControlMode>(data.int_value));
+    }
+    else if(data.name == "amp"){
+        set_amp(data.int_value);
+    }
+}
+
 float Charger::amp_to_power(float ampere){
     const float u_eff = 3*230; // Drehstrom
     const float power = ampere * u_eff;
@@ -259,11 +271,38 @@ Json::Value Charger::serialize(){
     result["amp"] = get_amp();
     result["alw"] = get_alw();
     Json::Value accessStateJson;
-    accessStateJson["int"] = get_access_state();
+    accessStateJson["int"] = static_cast<int>(get_access_state());
     accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state())];
     result["access_state"] = accessStateJson;
     result["online"] = online();
     return result;
+}
+
+void Charger::register_http_server_functions(httplib::Server* svr)
+{
+    PowerSink::register_http_server_functions(svr);
+    Json::CharReaderBuilder builder;
+    builder["collectComments"] = false;
+    svr->Put(
+        "/sink/"+name,
+        [this, builder]
+        (const httplib::Request &req, httplib::Response &res)
+        {
+            std::cout << "Put received" << std::endl;
+            std::stringstream ss;
+            ss.str(req.body);
+            Json::Value value;
+            Json::String errs;
+            bool ok = Json::parseFromStream(builder, ss, &value, &errs);
+            UpdateParamData data;
+            data.name = value["param"].asString();
+            data.str_value = value["str_value"].asString();
+
+            auto test = std::stoi(value["int_value"].asString());
+            data.int_value = test;
+            update_device(data);
+        }
+    );
 }
 
 std::size_t write_callback(const char* in, std::size_t size, std::size_t num, std::string* out){
