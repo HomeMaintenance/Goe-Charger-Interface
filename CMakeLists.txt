@@ -38,10 +38,21 @@ add_library(
 target_include_directories(Goe PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Goe PRIVATE
     CURL::libcurl)
+
+if(DEFINED CROSS_COMPILE)
+target_link_libraries(Goe PUBLIC
+    jsoncpp_object
+    jsoncpp_static
+    JsonCpp::JsonCpp
+)
+else()
 target_link_libraries(Goe PUBLIC
     jsoncpp_lib
     jsoncpp_object
     JsonCpp::JsonCpp
+)
+endif()
+target_link_libraries(Goe PUBLIC
     PowerManagement
     mqtt)
 # target_compile_definitions(Goe PRIVATE GOE_DEBUG=1)
