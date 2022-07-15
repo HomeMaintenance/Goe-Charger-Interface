@@ -60,8 +60,9 @@ int Charger::get_amp(){
 }
 
 void Charger::set_amp(int value){
-    if(value == get_amp())
+    if(value == get_amp() || value < 6)
         return;
+
     set_data("amp",value);
 }
 
@@ -233,8 +234,10 @@ void Charger::update_device(UpdateParamData data){
     if(data.name == "ctrl"){
         set_control_mode(static_cast<Charger::ControlMode>(data.int_value));
     }
-    else if(data.name == "amp"){
-        set_amp(data.int_value);
+    else if(data.name == "min-amp"){
+        auto power = get_requesting_power();
+        power.set_min(amp_to_power(data.int_value));
+        set_requesting_power(power);
     }
 }
 
