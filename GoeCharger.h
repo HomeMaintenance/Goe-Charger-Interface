@@ -66,6 +66,8 @@ namespace goe{
         bool update_cache() const;
         Json::Value get_from_cache(const std::string& key, const Json::Value& defaultValue) const;
 
+        virtual void set_requesting_power(const PowerRange& range) override;
+
         bool alw{false};
         int amp{0};
         const int min_amp{6};

@@ -126,6 +126,13 @@ Json::Value Charger::get_from_cache(const std::string& key, const Json::Value& d
     return result;
 }
 
+void Charger::set_requesting_power(const PowerRange& range){
+    PowerSink::set_requesting_power(range);
+    if(control_mode != ControlMode::Solar){
+        set_amp(amp_to_power(range.get_min()));
+    }
+}
+
 std::size_t write_callback(const char* in, std::size_t size, std::size_t num, std::string* out);
 Json::Value Charger::get_data_from_device() const {
     const std::lock_guard<std::mutex> lock(*curl_mtx);
