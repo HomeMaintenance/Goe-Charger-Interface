@@ -304,6 +304,7 @@ Json::Value Charger::serialize(){
     accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state())];
     result["access_state"] = accessStateJson;
     result["online"] = online();
+    result["power_factor"] = get_power_factor();
     return result;
 }
 
