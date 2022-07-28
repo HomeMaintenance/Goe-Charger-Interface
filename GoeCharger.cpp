@@ -46,7 +46,7 @@ Charger::~Charger(){
 }
 
 float Charger::using_power() {
-    return get_alw() ? amp_to_power(amp) : 0.f;
+    return get_nrg();
 }
 
 int Charger::get_min_amp() const{
@@ -70,6 +70,22 @@ void Charger::set_alw(bool value){
     if(value == get_alw())
         return;
     set_data("alw",static_cast<int>(value));
+}
+
+int Charger::get_nrg() const{
+    auto raw_data = get_from_cache("nrg", "0");
+    if(!raw_data.type() == Json::arrayValue)
+        return 0;
+    int result = raw_data[11].asInt()*10; // Watts
+    return result;
+}
+
+float Charger::get_power_factor() const{
+    auto raw_data = get_from_cache("nrg", "0");
+    if(!raw_data.type() == Json::arrayValue)
+        return -1;
+    float result = (raw_data[12].asInt() + raw_data[13].asInt() + raw_data[14].asInt())/3;
+    return static_cast<int>(result*100)/100;
 }
 
 bool Charger::get_alw() const{
@@ -245,6 +261,9 @@ void Charger::update_device(UpdateParamData data){
         auto power = get_requesting_power();
         power.set_min(amp_to_power(data.int_value));
         set_requesting_power(power);
+        if(control_mode != ControlMode::Solar){
+            set_amp(data.int_value);
+        }
     }
 }
 

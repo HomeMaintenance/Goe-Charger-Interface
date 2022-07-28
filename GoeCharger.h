@@ -45,6 +45,9 @@ namespace goe{
         bool get_alw() const;
         void set_alw(bool value);
 
+        int get_nrg() const;
+        float get_power_factor() const;
+
         void set_control_mode(ControlMode mode);
         ControlMode get_control_mode() const;
         int power_usage() const;
