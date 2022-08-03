@@ -64,6 +64,7 @@ void Charger::set_amp(int value){
         return;
 
     set_data("amp",value);
+    log("amp set to " + std::to_string(get_amp()));
 }
 
 void Charger::set_alw(bool value){
