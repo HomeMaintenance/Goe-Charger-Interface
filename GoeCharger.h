@@ -59,6 +59,9 @@ namespace goe{
 
         bool online() const;
 
+        void enable_log();
+        void disable_log();
+
         virtual Json::Value serialize() override;
 
         virtual void register_http_server_functions(httplib::Server* svr) override;
@@ -80,6 +83,9 @@ namespace goe{
         AccessState accessState{AccessState::RFID_APP_REQ};
 
         const std::vector<std::string> accessStateLUT{"Open", "RFID_APP_REQ", "PRICE_AUTO", "RFID_APP_REQ & PRICE_AUTO"};
+
+        bool _enable_log{false};
+        void log(std::string message) const;
 
         bool* _online;
 

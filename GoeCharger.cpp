@@ -109,6 +109,7 @@ bool Charger::allow_power(float power){
     bool power_used = false;
     if(control_mode == ControlMode::Solar){
         if(power >= get_requesting_power().get_min()){
+            log("enough power, switch on");
             const int _amp = floor(power_to_amp(power));
             set_amp(_amp);
             set_alw(true);
@@ -116,12 +117,17 @@ bool Charger::allow_power(float power){
             power_used = true;
         }
         else{
+            log("not enough power");
             if(get_alw() || get_allowed_power() != 0){
+                log("switch off");
                 set_amp(min_amp);
                 set_alw(false);
                 set_allowed_power(0);
             }
         }
+    }
+    else{
+        log("Manual mode active, ignoring power");
     }
     return power_used;
 }
@@ -287,6 +293,20 @@ Charger::AccessState Charger::get_access_state() const{
 
 bool Charger::online() const{
     return *_online;
+}
+
+void Charger::enable_log(){
+    _enable_log = true;
+}
+
+void Charger::disable_log(){
+    _enable_log = false;
+}
+
+void Charger::log(std::string message) const
+{
+    if(_enable_log)
+        std::cout << "-- GoeCharger " << name << ": " << message << std::endl;
 }
 
 Json::Value Charger::serialize(){
