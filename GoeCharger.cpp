@@ -60,7 +60,7 @@ int Charger::get_amp(){
 }
 
 void Charger::set_amp(int value){
-    if(value == get_amp() || value < 6)
+    if(value == get_amp() || value <= min_amp || value > max_amp)
         return;
 
     set_data("amp",value);
@@ -106,24 +106,24 @@ Charger::ControlMode Charger::get_control_mode() const{
 }
 
 bool Charger::allow_power(float power){
+    bool power_used = false;
     if(control_mode == ControlMode::Solar){
-        if(power > 0){
-            if(power >= get_requesting_power().get_min()){
-                int _amp = floor(power_to_amp(power));
-                set_amp(_amp);
-                set_alw(true);
-                set_allowed_power(amp_to_power(_amp));
-            }
+        if(power >= get_requesting_power().get_min()){
+            const int _amp = floor(power_to_amp(power));
+            set_amp(_amp);
+            set_alw(true);
+            set_allowed_power(amp_to_power(_amp));
+            power_used = true;
         }
         else{
             if(get_alw() || get_allowed_power() != 0){
                 set_amp(min_amp);
                 set_alw(false);
-                set_allowed_power(0);;
+                set_allowed_power(0);
             }
         }
     }
-    return true;
+    return power_used;
 }
 
 bool Charger::update_cache() const {
@@ -145,7 +145,7 @@ Json::Value Charger::get_from_cache(const std::string& key, const Json::Value& d
 void Charger::set_requesting_power(const PowerRange& range){
     PowerSink::set_requesting_power(range);
     if(control_mode != ControlMode::Solar){
-        set_amp(amp_to_power(range.get_min()));
+        set_amp(power_to_amp(range.get_min()));
     }
 }
 
