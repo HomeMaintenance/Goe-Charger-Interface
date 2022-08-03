@@ -82,7 +82,7 @@ int Charger::get_nrg() const{
 
 float Charger::get_power_factor() const{
     auto raw_data = get_from_cache("nrg", "0");
-    if(!raw_data.type() == Json::arrayValue)
+    if(raw_data.type() != Json::arrayValue)
         return -1;
     float result = (raw_data[12].asInt() + raw_data[13].asInt() + raw_data[14].asInt())/3;
     return static_cast<int>(result*100)/100;
