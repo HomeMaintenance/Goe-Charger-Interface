@@ -74,7 +74,7 @@ void Charger::set_alw(bool value){
 
 int Charger::get_nrg() const{
     auto raw_data = get_from_cache("nrg", "0");
-    if(!raw_data.type() == Json::arrayValue)
+    if(raw_data.type() != Json::arrayValue)
         return 0;
     int result = raw_data[11].asInt()*10; // Watts
     return result;
