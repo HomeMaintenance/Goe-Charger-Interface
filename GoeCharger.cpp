@@ -71,6 +71,7 @@ void Charger::set_alw(bool value){
     if(value == get_alw())
         return;
     set_data("alw",static_cast<int>(value));
+    log("alw set to " + std::to_string(get_alw()));
 }
 
 int Charger::get_nrg() const{
