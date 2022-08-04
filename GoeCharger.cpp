@@ -110,9 +110,9 @@ Charger::ControlMode Charger::get_control_mode() const{
 bool Charger::allow_power(float power){
     bool power_used = false;
     if(!get_car()){
-        log("Car not connected, ignoring power");
+        log("Warning: Car not connected");
     }
-    else if(control_mode == ControlMode::Solar){
+    if(control_mode == ControlMode::Solar){
         if(power >= get_requesting_power().get_min()){
             log("enough power, switch on");
             const int _amp = floor(power_to_amp(power));
