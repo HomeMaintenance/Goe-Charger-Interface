@@ -134,6 +134,12 @@ bool Charger::allow_power(float power){
     return power_used;
 }
 
+bool Charger::get_car() const{
+    auto raw_data = get_from_cache("car", "0").asString();
+    int result = std::stoi(raw_data);
+    return result;
+}
+
 bool Charger::update_cache() const {
     Json::Value device_data = get_data_from_device();
     if(device_data.empty())
@@ -327,6 +333,7 @@ Json::Value Charger::serialize(){
     result["access_state"] = accessStateJson;
     result["online"] = online();
     result["power_factor"] = get_power_factor();
+    result["car"] = get_car();
     return result;
 }
 

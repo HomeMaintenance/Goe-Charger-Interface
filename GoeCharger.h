@@ -39,6 +39,7 @@ namespace goe{
         virtual float using_power() override;
         virtual bool allow_power(float power) override;
 
+        bool get_car() const;
         int get_min_amp() const;
         int get_amp();
         void set_amp(int value);
