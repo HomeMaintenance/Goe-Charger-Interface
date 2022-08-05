@@ -60,7 +60,7 @@ int Charger::get_amp(){
 }
 
 void Charger::set_amp(int value){
-    if(value == get_amp() || value <= min_amp || value > max_amp)
+    if(value == get_amp() || value < min_amp || value > max_amp)
         return;
 
     set_data("amp",value);
