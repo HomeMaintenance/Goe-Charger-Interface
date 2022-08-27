@@ -67,6 +67,9 @@ namespace goe{
 
         virtual void register_http_server_functions(httplib::Server* svr) override;
 
+        void set_cache_max_age(int age);
+        int get_cache_max_age() const;
+
     protected:
     private:
         Cache<Json::Value>* cache;

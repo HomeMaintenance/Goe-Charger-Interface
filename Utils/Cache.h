@@ -54,9 +54,17 @@ public:
         dirty_flag = true;
     }
 
-    int max_age{3000}; //milliseconds
+    void set_max_age(int age){
+        max_age = age;
+    }
+
+    int get_max_age() const {
+        return max_age;
+    }
+
 private:
     std::clock_t time;
     std::shared_ptr<T> data;
     bool dirty_flag = true;
+    int max_age{3000}; //milliseconds
 };

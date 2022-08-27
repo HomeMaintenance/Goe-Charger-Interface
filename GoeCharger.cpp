@@ -367,6 +367,14 @@ void Charger::register_http_server_functions(httplib::Server* svr)
     );
 }
 
+void Charger::set_cache_max_age(int age){
+    cache->set_max_age(age);
+}
+
+int Charger::get_cache_max_age() const{
+    return cache->get_max_age();
+}
+
 std::size_t write_callback(const char* in, std::size_t size, std::size_t num, std::string* out){
     const std::size_t totalBytes(size * num);
     out->append(in, totalBytes);
