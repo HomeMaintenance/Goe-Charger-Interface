@@ -92,9 +92,9 @@ int test_curl(){
 
 
 void set_alw(goe::Charger& charger){
-    auto alw1 = charger.get_alw();
+    auto alw1 = charger.get_alw().value;
     charger.set_alw(!alw1);
-    auto alw2 = charger.get_alw();
+    auto alw2 = charger.get_alw().value;
     charger.set_alw(!alw2);
     std::this_thread::sleep_for(std::chrono::milliseconds(2500));
     charger.set_alw(false);
@@ -104,11 +104,11 @@ void set_amp(goe::Charger& charger){
     auto start = charger.get_amp();
     for(int i = 6; i <= 20; ++i){
         charger.set_amp(i);
-        std::cout << charger.get_amp() << std::endl;
+        std::cout << charger.get_amp().value << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(2500));
     }
     charger.set_amp(6);
-    std::cout << charger.get_amp() << std::endl;
+    std::cout << charger.get_amp().value << std::endl;
 }
 
 void test_goe(){

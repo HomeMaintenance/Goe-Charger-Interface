@@ -34,20 +34,40 @@ namespace goe{
             PRICE_AUTO
         };
 
+        enum Response{
+            Undefined = -100,
+            TypeError = -4,
+            ValueError = -2,
+            HttpError = -1,
+            NotNeeded = 0,
+            FromDevice = 1,
+            FromCache = 2
+        };
+        static const std::vector<std::string> response_LUT;
+        static std::string response_to_str(Response r);
+
+        template<typename T>
+        struct GetResponse{
+            GetResponse() = default;
+            GetResponse(T v, Response r): value(v), response(r){}
+            Response response;
+            T value;
+        };
+
     public:
 
         virtual float using_power() override;
         virtual bool allow_power(float power) override;
 
-        bool get_car() const;
+        GetResponse<bool> get_car() const;
         int get_min_amp() const;
-        int get_amp();
-        void set_amp(int value);
-        bool get_alw() const;
-        void set_alw(bool value);
+        GetResponse<int> get_amp();
+        Response set_amp(int value);
+        GetResponse<bool> get_alw() const;
+        Response set_alw(bool value);
 
-        int get_nrg() const;
-        float get_power_factor() const;
+        GetResponse<int> get_nrg() const;
+        GetResponse<float> get_power_factor() const;
 
         void set_control_mode(ControlMode mode);
         ControlMode get_control_mode() const;
@@ -56,7 +76,7 @@ namespace goe{
         static float amp_to_power(float ampere);
         static float power_to_amp(float power);
 
-        AccessState get_access_state() const;
+        GetResponse<AccessState> get_access_state() const;
 
         bool online() const;
 
@@ -70,8 +90,8 @@ namespace goe{
     protected:
     private:
         Cache<Json::Value>* cache;
-        bool update_cache() const;
-        Json::Value get_from_cache(const std::string& key, const Json::Value& defaultValue) const;
+        Response update_cache() const;
+        GetResponse<Json::Value> get_from_cache(const std::string& key, const Json::Value& defaultValue) const;
 
         virtual void set_requesting_power(const PowerRange& range) override;
 
@@ -92,8 +112,8 @@ namespace goe{
 
         std::unique_ptr<std::mutex> curl_mtx;
     private:
-        Json::Value get_data_from_device() const;
-        bool set_data(std::string key, Json::Value value) const;
+        GetResponse<Json::Value> get_data_from_device() const;
+        Response set_data(std::string key, Json::Value value) const;
         const PowerRange power_range_default = PowerRange(min_amp * 690.f, max_amp * 690.f);
         const PowerRange power_range_off = PowerRange(0,0);
 

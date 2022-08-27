@@ -29,12 +29,22 @@ std::unordered_map<std::string,std::string> json_2_map(const Json::Value& json){
 
 namespace goe{
 const std::string Charger::type = "goeCharger";
+const std::vector<std::string> Charger::response_LUT{
+    "Undefined", "ValueError", "HttpError", "NotNeeded", "FromDevice", "FromCache"
+};
+std::string Charger::response_to_str(Response r){return response_LUT[static_cast<int>(r)];}
+
 Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
     address =  "http://" + _address;
     curl_mtx = std::make_unique<std::mutex>();
     cache = new Cache<Json::Value>();
+    cache->max_age = 0;
     _online = new bool();
-    *cache = get_data_from_device();
+
+    GetResponse<Json::Value> device_data = get_data_from_device();
+    if(device_data.response == Response::FromDevice)
+        *cache = device_data.value;
+
     set_requesting_power(power_range_default);
 }
 
@@ -46,53 +56,65 @@ Charger::~Charger(){
 }
 
 float Charger::using_power() {
-    return get_nrg();
+    return get_nrg().value;
 }
 
 int Charger::get_min_amp() const{
     return min_amp;
 }
 
-int Charger::get_amp(){
-    auto raw_data = get_from_cache("amp", "0").asString();
-    int result = std::stoi(raw_data);
+Charger::GetResponse<int> Charger::get_amp(){
+    GetResponse<Json::Value> raw_data = get_from_cache("amp", "0");
+    std::string data_str = raw_data.value.asString();
+
+    int data_int = std::stoi(data_str);
+
+    GetResponse<int> result(data_int, raw_data.response);
     return result;
 }
 
-void Charger::set_amp(int value){
-    if(value == get_amp() || value < min_amp || value > max_amp)
-        return;
+Charger::Response Charger::set_amp(int value){
+    auto amp = get_amp();
+    if(static_cast<int>(amp.response) > 0 && value == amp.value || value < min_amp || value > max_amp)
+        return Response::NotNeeded;
 
-    set_data("amp",value);
-    log("amp set to " + std::to_string(get_amp()));
+    Response res = set_data("amp",value);
+    log("amp set to " + std::to_string(get_amp().value) + ", with response " + response_to_str(res));
+    return res;
 }
 
-void Charger::set_alw(bool value){
-    if(value == get_alw())
-        return;
-    set_data("alw",static_cast<int>(value));
-    log("alw set to " + std::to_string(get_alw()));
+Charger::Response Charger::set_alw(bool value){
+    auto alw_res = get_alw();
+    if(alw_res.response == Response::FromDevice && value == alw_res.value)
+        return Response::NotNeeded;
+    Response res = set_data("alw",static_cast<int>(value));
+    log("alw set to " + std::to_string(get_alw().value) + ", with response " + response_to_str(res));
+    return res;
 }
 
-int Charger::get_nrg() const{
+Charger::GetResponse<int> Charger::get_nrg() const{
     auto raw_data = get_from_cache("nrg", "0");
-    if(raw_data.type() != Json::arrayValue)
-        return 0;
-    int result = raw_data[11].asInt()*10; // Watts
+    if(raw_data.value.type() != Json::arrayValue)
+        return GetResponse<int>(0, Response::TypeError);
+    int nrg = raw_data.value[11].asInt()*10; // Watts
+    GetResponse<int> result(nrg, raw_data.response);
     return result;
 }
 
-float Charger::get_power_factor() const{
+Charger::GetResponse<float> Charger::get_power_factor() const{
     auto raw_data = get_from_cache("nrg", "0");
-    if(raw_data.type() != Json::arrayValue)
-        return -1;
-    float result = (raw_data[12].asInt() + raw_data[13].asInt() + raw_data[14].asInt())/3;
-    return static_cast<int>(result*100)/100;
+    if(raw_data.value.type() != Json::arrayValue)
+        return GetResponse<float>(-1., Response::TypeError);
+    const float power_factor_raw = (raw_data.value[12].asInt() + raw_data.value[13].asInt() + raw_data.value[14].asInt())/3;
+    const float power_factor = static_cast<int>(power_factor_raw*100)/100;
+    GetResponse<float> result(power_factor, raw_data.response);
+    return result;
 }
 
-bool Charger::get_alw() const{
-    auto raw_data = get_from_cache("alw", "0").asString();
-    bool result = static_cast<bool>(std::stoi(raw_data));
+Charger::GetResponse<bool> Charger::get_alw() const{
+    auto raw_data = get_from_cache("alw", "0");
+    bool alw = static_cast<bool>(std::stoi(raw_data.value.asString()));
+    GetResponse<bool> result(alw, raw_data.response);
     return result;
 }
 
@@ -109,7 +131,19 @@ Charger::ControlMode Charger::get_control_mode() const{
 
 bool Charger::allow_power(float power){
     bool power_used = false;
-    if(!get_car()){
+
+    auto _car = get_car();
+    auto _alw = get_alw();
+
+    if(_car.response < 0){
+        log("Error while reading car: " + response_to_str(_car.response));
+    }
+
+    if(_alw.response < 0){
+        log("Error while reading alw: "+ response_to_str(_alw.response));
+    }
+
+    if(!_car.value){
         log("Warning: Car not connected");
     }
     if(control_mode == ControlMode::Solar){
@@ -123,7 +157,7 @@ bool Charger::allow_power(float power){
         }
         else{
             log("not enough power");
-            if(get_alw() || get_allowed_power() != 0){
+            if(_alw.value || get_allowed_power() != 0){
                 log("switch off");
                 set_amp(min_amp);
                 set_alw(false);
@@ -137,37 +171,44 @@ bool Charger::allow_power(float power){
     return power_used;
 }
 
-bool Charger::get_car() const{
-    auto raw_data = get_from_cache("car", "0").asString();
-    int result = std::stoi(raw_data);
+Charger::GetResponse<bool> Charger::get_car() const{
+    auto raw_data = get_from_cache("car", "0");
+    std::string data = raw_data.value.asString();
+    GetResponse<bool> result(std::stoi(data)>0, raw_data.response);
     return result;
 }
 
-bool Charger::update_cache() const {
-    Json::Value device_data = get_data_from_device();
-    if(device_data.empty())
-        return false;
-    cache->update(device_data);
-    return true;
+Charger::Response Charger::update_cache() const {
+    GetResponse<Json::Value> device_data = get_data_from_device();
+    if(static_cast<int>(device_data.response) < 0)
+        return device_data.response;
+    cache->update(device_data.value);
+    return device_data.response;
 }
 
-Json::Value Charger::get_from_cache(const std::string& key, const Json::Value& defaultValue) const{
+Charger::GetResponse<Json::Value> Charger::get_from_cache(const std::string& key, const Json::Value& defaultValue) const{
+    GetResponse<Json::Value> result;
     if(cache->dirty()){
         update_cache();
+        result.response = Response::FromDevice;
     }
-    auto result = (*cache->get_data()).get(key, defaultValue);
+    else{
+        result.response = Response::FromCache;
+    }
+    auto data = (*cache->get_data()).get(key, defaultValue);
+    result.value = data;
     return result;
 }
 
 void Charger::set_requesting_power(const PowerRange& range){
     PowerSink::set_requesting_power(range);
     if(control_mode != ControlMode::Solar){
-        set_amp(power_to_amp(range.get_min()));
+        Response res = set_amp(power_to_amp(range.get_min()));
     }
 }
 
 std::size_t write_callback(const char* in, std::size_t size, std::size_t num, std::string* out);
-Json::Value Charger::get_data_from_device() const {
+Charger::GetResponse<Json::Value> Charger::get_data_from_device() const {
     const std::lock_guard<std::mutex> lock(*curl_mtx);
     CURL* curl = curl_easy_init();
     // Set remote URL.
@@ -206,7 +247,7 @@ Json::Value Charger::get_data_from_device() const {
             std::cout << "\nJSON data received:" << std::endl;
             std::cout << jsonData.toStyledString() << std::endl;
             #endif
-            return jsonData;
+            return GetResponse(jsonData, Response::FromDevice);
         }
         else
         {
@@ -219,17 +260,17 @@ Json::Value Charger::get_data_from_device() const {
     else{
         *_online = false;
     }
-    return{};
+    return GetResponse(Json::Value(), Response::HttpError);
 }
 
-bool Charger::set_data(std::string key, Json::Value value) const{
+Charger::Response Charger::set_data(std::string key, Json::Value value) const{
 
     if(key == "")
-        return false;
+        return Response::TypeError;
     if(value.isObject())
-        return false;
+        return Response::TypeError;
     if(value.isArray())
-        return false;
+        return Response::TypeError;
     std::string request_address = address+"/mqtt?payload="+key+"="+value.asString();
     const std::lock_guard<std::mutex> lock(*curl_mtx);
     CURL* curl = curl_easy_init();
@@ -263,11 +304,10 @@ bool Charger::set_data(std::string key, Json::Value value) const{
         Json::Reader jsonReader;
         if (jsonReader.parse(*httpData.get(), jsonData))
             cache->update(jsonData);
-        else
-            cache->mark_dirty();
-        return true;
+        cache->mark_dirty();
+        return Response::FromDevice;
     }
-    return false;
+    return Response::HttpError;
 }
 
 void Charger::update_device(UpdateParamData data){
@@ -296,10 +336,11 @@ float Charger::power_to_amp(float power){
     return i;
 }
 
-Charger::AccessState Charger::get_access_state() const{
-    auto raw_data = get_from_cache("ast", "1").asString();
-    AccessState state = static_cast<AccessState>(std::stoi(raw_data));
-    return state;
+Charger::GetResponse<Charger::AccessState> Charger::get_access_state() const{
+    auto raw_data = get_from_cache("ast", "1");
+    AccessState state = static_cast<AccessState>(std::stoi(raw_data.value.asString()));
+    GetResponse<AccessState> result(state, raw_data.response);
+    return result;
 }
 
 bool Charger::online() const{
@@ -328,15 +369,15 @@ Json::Value Charger::serialize(){
     controlModeJson["int"] = static_cast<int>(control_mode);
     controlModeJson["str"] = controlModeLUT[static_cast<int>(control_mode)];
     result["control_mode"] = controlModeJson;
-    result["amp"] = get_amp();
-    result["alw"] = get_alw();
+    result["amp"] = get_amp().value;
+    result["alw"] = get_alw().value;
     Json::Value accessStateJson;
-    accessStateJson["int"] = static_cast<int>(get_access_state());
-    accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state())];
+    accessStateJson["int"] = static_cast<int>(get_access_state().value);
+    accessStateJson["str"] = accessStateLUT[static_cast<int>(get_access_state().value)];
     result["access_state"] = accessStateJson;
     result["online"] = online();
-    result["power_factor"] = get_power_factor();
-    result["car"] = get_car();
+    result["power_factor"] = get_power_factor().value;
+    result["car"] = get_car().value;
     return result;
 }
 

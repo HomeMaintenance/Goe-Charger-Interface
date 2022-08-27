@@ -24,7 +24,7 @@ Server::Server(int _port){
     svr.Get("/charger/alw", [this](const httplib::Request &req, httplib::Response &res) {
         Json::Value jsonData;
         if(auto c = goeCharger.lock())
-            jsonData["value"] = c->get_alw();
+            jsonData["value"] = c->get_alw().value;
         std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
@@ -32,7 +32,7 @@ Server::Server(int _port){
     svr.Get("/charger/amp", [this](const httplib::Request &req, httplib::Response &res) {
         Json::Value jsonData;
         if(auto c = goeCharger.lock())
-            jsonData["value"] = c->get_amp();
+            jsonData["value"] = c->get_amp().value;
         std::string content = convert_to_string(jsonData);
         res.set_content(content, "application/json");
     });
