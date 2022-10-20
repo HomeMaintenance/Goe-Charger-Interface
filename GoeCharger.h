@@ -36,7 +36,7 @@ namespace goe{
 
     public:
 
-        virtual float using_power() override;
+        virtual float using_power() const override;
         virtual bool allow_power(float power) override;
 
         bool get_car() const;
@@ -72,7 +72,7 @@ namespace goe{
 
     protected:
     private:
-        Cache<Json::Value>* cache;
+        std::unique_ptr<Cache<Json::Value>> cache;
         bool update_cache() const;
         Json::Value get_from_cache(const std::string& key, const Json::Value& defaultValue) const;
 
@@ -91,7 +91,7 @@ namespace goe{
         bool _enable_log{false};
         void log(std::string message) const;
 
-        bool* _online;
+        std::unique_ptr<bool> _online;
 
         std::unique_ptr<std::mutex> curl_mtx;
     private:

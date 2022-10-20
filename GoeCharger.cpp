@@ -32,20 +32,16 @@ const std::string Charger::type = "goeCharger";
 Charger::Charger(std::string _name, std::string _address): PowerSink(_name) {
     address =  "http://" + _address;
     curl_mtx = std::make_unique<std::mutex>();
-    cache = new Cache<Json::Value>();
-    _online = new bool();
+    cache = std::make_unique<Cache<Json::Value>>();
+    _online = std::make_unique<bool>(false);
     *cache = get_data_from_device();
     set_requesting_power(power_range_default);
 }
 
 Charger::~Charger(){
-    delete cache;
-    cache = nullptr;
-    delete _online;
-    _online = nullptr;
 }
 
-float Charger::using_power() {
+float Charger::using_power() const {
     return get_nrg();
 }
 
@@ -74,7 +70,7 @@ void Charger::set_alw(bool value){
     log("alw set to " + std::to_string(get_alw()));
 }
 
-int Charger::get_nrg() const{
+int Charger::get_nrg() const {
     auto raw_data = get_from_cache("nrg", "0");
     if(raw_data.type() != Json::arrayValue)
         return 0;
